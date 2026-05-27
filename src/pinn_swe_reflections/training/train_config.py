@@ -1,15 +1,11 @@
-from dataclasses import dataclass
-
-from pathlib import Path
 import torch
 import numpy as np
 
+from dataclasses import dataclass
+
+
 @dataclass
 class TrainConfig:
-    # path param
-    project_dir = Path(__file__).resolve().parents[1]
-    output_dir: Path = Path(__file__).resolve().parent / "runs"
-
     numerical_solution_directory = "AH=5e+4"  # "AH=5e+4" or "AH=0"
 
     # training options

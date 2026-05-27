@@ -5,19 +5,26 @@ import time
 import torch
 import numpy as np
 
+from pinn_swe_reflections.common.paths import get_training_run_dir
+
+
 def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
-    model_kwargs = {} if model_kwargs is None else dict(model_kwargs)
-    run_dir = cfg.output_dir / experiment_name
-    best_state_dir = run_dir / "best_states"
-    if run_dir.exists() and any(run_dir.iterdir()):
-        raise FileExistsError(f"Run directory already exists and is not empty: {run_dir}")
+    run_dir = get_training_run_dir(experiment_name)
     run_dir.mkdir(parents=True, exist_ok=True)
-    best_state_dir.mkdir(parents=True, exist_ok=True)
-    
-    os.environ["EXP_NAME"] = str(experiment_name)
-    os.environ["BEST_STATE_DIR"] = str(best_state_dir)
-    print("experiment:", experiment_name)
-    print("model_cls :", model_cls.__name__)
+
+    def out_path(file_name):
+        return run_dir / file_name
+
+    def save_npy(file_name, value):
+        np.save(out_path(file_name), value)
+
+    def save_json(file_name, value):
+        out_path(file_name).write_text(
+            json.dumps(value, indent=4),
+            encoding="utf-8",
+        )
+
+    model_kwargs = {} if model_kwargs is None else dict(model_kwargs)
 
     start = time.time()
     local_new_initial_conditions = None
@@ -114,56 +121,51 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
         end = time.time()
         computation_time = end - start
 
-        # load best state dict and save artifacts into output_dir/experiment_name/model_number
-        exp_name = os.getenv("EXP_NAME")
+        # get best state dict
         best_step = Physics_Informed_Neural_Network.best_step
-        best_state_path = best_state_dir / ("Best_State_Dict_" + str(Physics_Informed_Neural_Network.model_number) + "_" + str(exp_name))
-        Physics_Informed_Neural_Network.load_state_dict(torch.load(best_state_path, map_location=cfg.device))
+        best_state_dict = Physics_Informed_Neural_Network.get_best_state_dict()
 
-        old_cwd = os.getcwd()
-        os.chdir(run_dir)
         # Save Model Parameters
-        torch.save(Physics_Informed_Neural_Network.state_dict(), ("TrainedParameters_SWE_" + str(model_number)))
-        torch.save(Physics_Informed_Neural_Network.state_dict(), ("Best_State_Dict_" + str(model_number) + "_" + str(exp_name)))
+        torch.save(best_state_dict, out_path("TrainedParameters_SWE_" + str(model_number) + ".pt"))
 
         # Save new initial conditions and respective sampling points
         [local_new_initial_conditions, local_new_initial_condition_sampling_points] = Physics_Informed_Neural_Network.Save_Final_State()
 
-        np.save("improvement_steps", Physics_Informed_Neural_Network.improvement_steps)
+        save_npy("improvement_steps", Physics_Informed_Neural_Network.improvement_steps)
         # save different loss terms over training
-        np.save("total_MSE_over_training", Physics_Informed_Neural_Network.total_MSE_over_training)
-        np.save(
+        save_npy("total_MSE_over_training", Physics_Informed_Neural_Network.total_MSE_over_training)
+        save_npy(
             "MSE_boundary_conditions_over_training", Physics_Informed_Neural_Network.MSE_boundary_conditions_over_training
         )
-        np.save(
+        save_npy(
             "MSE_initial_conditions_over_training", Physics_Informed_Neural_Network.MSE_initial_conditions_over_training
         )
-        np.save(
+        save_npy(
             "MSE_symbolic_functions_over_training", Physics_Informed_Neural_Network.MSE_symbolic_functions_over_training
         )
-        np.save("Relative_L2_Error_h_over_training", Physics_Informed_Neural_Network.MSE_numerical_solution_h_over_training)
-        np.save("Relative_L2_Error_u_over_training", Physics_Informed_Neural_Network.MSE_numerical_solution_u_over_training)
-        np.save(
+        save_npy("Relative_L2_Error_h_over_training", Physics_Informed_Neural_Network.MSE_numerical_solution_h_over_training)
+        save_npy("Relative_L2_Error_u_over_training", Physics_Informed_Neural_Network.MSE_numerical_solution_u_over_training)
+        save_npy(
             "MSE_initial_condition_u_over_training", Physics_Informed_Neural_Network.MSE_initial_condition_u_over_training
         )
-        np.save(
+        save_npy(
             "MSE_initial_condition_h_over_training", Physics_Informed_Neural_Network.MSE_initial_condition_h_over_training
         )
-        np.save(
+        save_npy(
             "MSE_symbolic_function_u_over_training", Physics_Informed_Neural_Network.MSE_symbolic_function_u_over_training
         )
-        np.save(
+        save_npy(
             "MSE_symbolic_function_h_over_training", Physics_Informed_Neural_Network.MSE_symbolic_function_h_over_training
         )
-        np.save(
+        save_npy(
             "MSE_symbolic_function_h_over_training", Physics_Informed_Neural_Network.MSE_symbolic_function_h_over_training
         )
 
-        np.save(
+        save_npy(
             "MSE_lower_boundary_condition_u_over_training",
             Physics_Informed_Neural_Network.MSE_lower_boundary_condition_u_over_training,
         )
-        np.save(
+        save_npy(
             "MSE_upper_boundary_condition_u_over_training",
             Physics_Informed_Neural_Network.MSE_upper_boundary_condition_u_over_training,
         )
@@ -178,55 +180,55 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
         ]
         for array_name in extra_loss_arrays:
             if hasattr(Physics_Informed_Neural_Network, array_name):
-                np.save(array_name, getattr(Physics_Informed_Neural_Network, array_name))
+                save_npy(array_name, getattr(Physics_Informed_Neural_Network, array_name))
 
         if Physics_Informed_Neural_Network.learning_rate_annealing is True:
-            np.save(
+            save_npy(
                 "symbolic_function_weight_over_training",
                 Physics_Informed_Neural_Network.symbolic_function_weight_over_training,
             )
-            np.save(
+            save_npy(
                 "initial_condition_weight_over_training",
                 Physics_Informed_Neural_Network.initial_condition_weight_over_training,
             )
-            np.save(
+            save_npy(
                 "boundary_condition_weight_over_training",
                 Physics_Informed_Neural_Network.boundary_condition_weight_over_training,
             )
 
         # save grids for plots
         if Physics_Informed_Neural_Network.non_dimensionalization is True:
-            np.save("dimensional_time_mesh_grid", Physics_Informed_Neural_Network.dimensional_time_mesh_grid)
-            np.save("dimensional_x_mesh_grid", Physics_Informed_Neural_Network.dimensional_x_mesh_grid)
+            save_npy("dimensional_time_mesh_grid", Physics_Informed_Neural_Network.dimensional_time_mesh_grid)
+            save_npy("dimensional_x_mesh_grid", Physics_Informed_Neural_Network.dimensional_x_mesh_grid)
 
-        np.save("time_mesh_grid", Physics_Informed_Neural_Network.time_mesh_grid)
-        np.save("x_mesh_grid", Physics_Informed_Neural_Network.x_mesh_grid)
-        np.save("time_input_grid", Physics_Informed_Neural_Network.time_input_grid.cpu().detach().numpy())
-        np.save("x_input_grid", Physics_Informed_Neural_Network.x_input_grid.cpu().detach().numpy())
-        np.save("mesh_grid_shape", Physics_Informed_Neural_Network.mesh_grid_shape)
-        np.save(
+        save_npy("time_mesh_grid", Physics_Informed_Neural_Network.time_mesh_grid)
+        save_npy("x_mesh_grid", Physics_Informed_Neural_Network.x_mesh_grid)
+        save_npy("time_input_grid", Physics_Informed_Neural_Network.time_input_grid.cpu().detach().numpy())
+        save_npy("x_input_grid", Physics_Informed_Neural_Network.x_input_grid.cpu().detach().numpy())
+        save_npy("mesh_grid_shape", Physics_Informed_Neural_Network.mesh_grid_shape)
+        save_npy(
             "zeta_solution_time_input_grid",
             Physics_Informed_Neural_Network.zeta_solution_time_input_grid.cpu().detach().numpy(),
         )
-        np.save(
+        save_npy(
             "u_solution_time_input_grid", Physics_Informed_Neural_Network.u_solution_time_input_grid.cpu().detach().numpy()
         )
-        np.save(
+        save_npy(
             "zeta_solution_x_input_grid", Physics_Informed_Neural_Network.zeta_solution_x_input_grid.cpu().detach().numpy()
         )
-        np.save("u_solution_x_input_grid", Physics_Informed_Neural_Network.u_solution_x_input_grid.cpu().detach().numpy())
-        np.save(
+        save_npy("u_solution_x_input_grid", Physics_Informed_Neural_Network.u_solution_x_input_grid.cpu().detach().numpy())
+        save_npy(
             "dimensional_zeta_solution_time_mesh_grid",
             Physics_Informed_Neural_Network.dimensional_zeta_solution_time_mesh_grid,
         )
-        np.save(
+        save_npy(
             "dimensional_u_solution_time_mesh_grid", Physics_Informed_Neural_Network.dimensional_u_solution_time_mesh_grid
         )
-        np.save(
+        save_npy(
             "dimensional_zeta_solution_x_mesh_grid", Physics_Informed_Neural_Network.dimensional_zeta_solution_x_mesh_grid
         )
-        np.save("dimensional_u_solution_x_mesh_grid", Physics_Informed_Neural_Network.dimensional_u_solution_x_mesh_grid)
-        np.save(
+        save_npy("dimensional_u_solution_x_mesh_grid", Physics_Informed_Neural_Network.dimensional_u_solution_x_mesh_grid)
+        save_npy(
             "dimensional_solution_mesh_grid_shape",
             Physics_Informed_Neural_Network.dimensional_zeta_solution_x_mesh_grid.shape,
         )
@@ -252,8 +254,8 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
             .numpy()
             .reshape(Physics_Informed_Neural_Network.u_solution_mesh_grid_shape)
         )
-        np.save("network_output_h_values", network_output_h_values)
-        np.save("network_output_u_values", network_output_u_values)
+        save_npy("network_output_h_values", network_output_h_values)
+        save_npy("network_output_u_values", network_output_u_values)
 
         if Physics_Informed_Neural_Network.non_dimensionalization is True:
             dimensional_network_output_h_values = (
@@ -264,19 +266,19 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
                     * Physics_Informed_Neural_Network.horizontal_length_scale
                     / Physics_Informed_Neural_Network.time_scale
             )
-            np.save("dimensional_network_output_h_values", dimensional_network_output_h_values)
-            np.save("dimensional_network_output_u_values", dimensional_network_output_u_values)
+            save_npy("dimensional_network_output_h_values", dimensional_network_output_h_values)
+            save_npy("dimensional_network_output_u_values", dimensional_network_output_u_values)
 
         # save numerical solution
         exact_solution_u_values = Physics_Informed_Neural_Network.exact_solution_u_values.cpu().detach().numpy()
         exact_solution_h_values = Physics_Informed_Neural_Network.exact_solution_h_values.cpu().detach().numpy()
-        np.save("exact_solution_u_values", exact_solution_u_values)
-        np.save("exact_solution_h_values", exact_solution_h_values)
+        save_npy("exact_solution_u_values", exact_solution_u_values)
+        save_npy("exact_solution_h_values", exact_solution_h_values)
 
         abs_error_h_values = abs(exact_solution_h_values - dimensional_network_output_h_values)
         abs_error_u_values = abs(exact_solution_u_values - dimensional_network_output_u_values)
-        np.save("abs_error_h_values", abs_error_h_values)
-        np.save("abs_error_u_values", abs_error_u_values)
+        save_npy("abs_error_h_values", abs_error_h_values)
+        save_npy("abs_error_u_values", abs_error_u_values)
 
         # save initial condition output
         minimum_time = Physics_Informed_Neural_Network.minimum_time
@@ -318,10 +320,10 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
                 )
                 minimum_time = minimum_time * Physics_Informed_Neural_Network.time_scale
 
-            np.save("true_initial_condition_h_values", true_initial_condition_h_values)
-            np.save("network_output_h_initial_conditions", network_output_h_initial_conditions)
-            np.save("true_initial_condition_u_values", true_initial_condition_u_values)
-            np.save("network_output_u_initial_conditions", network_output_u_initial_conditions)
+            save_npy("true_initial_condition_h_values", true_initial_condition_h_values)
+            save_npy("network_output_h_initial_conditions", network_output_h_initial_conditions)
+            save_npy("true_initial_condition_u_values", true_initial_condition_u_values)
+            save_npy("network_output_u_initial_conditions", network_output_u_initial_conditions)
 
         # save boundary condition output
         dimensional_minimum_x = Physics_Informed_Neural_Network.minimum_x
@@ -373,10 +375,10 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
             dimensional_minimum_x = dimensional_minimum_x * Physics_Informed_Neural_Network.horizontal_length_scale
             dimensional_maximum_x = dimensional_maximum_x * Physics_Informed_Neural_Network.horizontal_length_scale
 
-        np.save("true_lower_boundary_condition_u_values", true_lower_boundary_condition_u_values)
-        np.save("network_output_u_lower_boundary_condition", network_output_u_lower_boundary_condition)
-        np.save("true_upper_boundary_condition_u_values", true_upper_boundary_condition_u_values)
-        np.save("network_output_u_upper_boundary_condition", network_output_u_upper_boundary_condition)
+        save_npy("true_lower_boundary_condition_u_values", true_lower_boundary_condition_u_values)
+        save_npy("network_output_u_lower_boundary_condition", network_output_u_lower_boundary_condition)
+        save_npy("true_upper_boundary_condition_u_values", true_upper_boundary_condition_u_values)
+        save_npy("network_output_u_upper_boundary_condition", network_output_u_upper_boundary_condition)
 
         # save PDE losses over domain
         mesh_grid_shape = Physics_Informed_Neural_Network.mesh_grid_shape
@@ -389,20 +391,20 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
         x_mesh_grid = Physics_Informed_Neural_Network.x_mesh_grid * Physics_Informed_Neural_Network.horizontal_length_scale
         PDE_Loss_u = Physics_Informed_Neural_Network.symbolic_function_u_values.reshape(shape=mesh_grid_shape)
         PDE_Loss_h = Physics_Informed_Neural_Network.symbolic_function_h_values.reshape(shape=mesh_grid_shape)
-        np.save("PDE_Loss_u", PDE_Loss_u.cpu().detach().numpy())
-        np.save("PDE_Loss_h", PDE_Loss_h.cpu().detach().numpy())
+        save_npy("PDE_Loss_u", PDE_Loss_u.cpu().detach().numpy())
+        save_npy("PDE_Loss_h", PDE_Loss_h.cpu().detach().numpy())
 
         # save network output & losses over training
-        np.save("network_output_h_over_training", Physics_Informed_Neural_Network.network_output_h_over_training)
-        np.save("network_output_u_over_training", Physics_Informed_Neural_Network.network_output_u_over_training)
-        np.save("symbolic_function_u_over_training", Physics_Informed_Neural_Network.symbolic_function_u_over_training)
-        np.save("symbolic_function_h_over_training", Physics_Informed_Neural_Network.symbolic_function_h_over_training)
+        save_npy("network_output_h_over_training", Physics_Informed_Neural_Network.network_output_h_over_training)
+        save_npy("network_output_u_over_training", Physics_Informed_Neural_Network.network_output_u_over_training)
+        save_npy("symbolic_function_u_over_training", Physics_Informed_Neural_Network.symbolic_function_u_over_training)
+        save_npy("symbolic_function_h_over_training", Physics_Informed_Neural_Network.symbolic_function_h_over_training)
 
         print("Mean Time Per Epoch: " + str(np.mean(Physics_Informed_Neural_Network.time_per_epoch)))
         print("Mean Time Per Iteration: " + str(np.mean(Physics_Informed_Neural_Network.time_per_iteration)))
 
-        np.save("time_per_epoch", Physics_Informed_Neural_Network.time_per_epoch)
-        np.save("time_per_iteration", Physics_Informed_Neural_Network.time_per_iteration)
+        save_npy("time_per_epoch", Physics_Informed_Neural_Network.time_per_epoch)
+        save_npy("time_per_iteration", Physics_Informed_Neural_Network.time_per_iteration)
 
         Hyper_Parameter_Dictionary = {
             "experiment_name": experiment_name,
@@ -465,15 +467,8 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
             "iterations_per_epoch": cfg.iterations_per_epoch,
         }
 
-        # create json object from dictionary
-        json_dict = json.dumps(Hyper_Parameter_Dictionary)
-        # open file for writing, "w"
-        f = open("Hyper_Parameter_Dictionary.json", "w")
-        # write json object to file
-        f.write(json_dict)
-        # close file
-        f.close()
-        os.chdir(old_cwd)
+        save_json("Hyper_Parameter_Dictionary.json", Hyper_Parameter_Dictionary)
+
         last_model = Physics_Informed_Neural_Network
 
     return last_model, run_dir

@@ -6,10 +6,9 @@ cfg = TrainConfig()
 
 cfg.epochs = 5
 cfg.output_period = 1
-cfg.experiment_name = "baseline"
 
 run_training_pipeline(
     model_cls=PINN,
-    experiment_name=cfg.experiment_name,
+    experiment_name="baseline",
     cfg=cfg,
 )

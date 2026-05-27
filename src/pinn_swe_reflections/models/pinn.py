@@ -20,6 +20,7 @@ from pinn_swe_reflections.models.components import (
 )
 
 from pinn_swe_reflections.optim import PCGrad, FullBatchLBFGS
+from pinn_swe_reflections.common import get_numerical_solution_dir
 
 
 # Define class of Physics Informed Neural Networks for the 1D-Shallow Water Equations
@@ -88,8 +89,6 @@ class PINN(nn.Module):
 
         super().__init__()
 
-        self.exp_name = os.getenv("EXP_NAME")
-        self.best_state_dir = os.getenv("BEST_STATE_DIR")
         # initialize Model Architecture using the given Parameters
         print("Initialize Network Architecture.")
         self.minibatch_training = minibatch_training
@@ -99,6 +98,8 @@ class PINN(nn.Module):
         self.split_networks = split_networks
         self.train_on_boundary_condition_loss = train_on_boundary_condition_loss
         self.train_on_initial_condition_loss = train_on_initial_condition_loss
+        self.best_state_dict = None
+        self.best_validation_error = float("inf")
         self.improvement_steps = []
         self.best_step = 0
         self.number_of_layers = len(layer_sizes) - 1
@@ -278,12 +279,12 @@ class PINN(nn.Module):
 
         self.exact_solution_h_values = torch.FloatTensor(
             np.load(
-                "Numerical_Solution/dt=1s_dx=400m/" + self.numerical_solution_directory + "/Sea_Level_Elevation.npy")[
+                get_numerical_solution_dir(self.numerical_solution_directory) + "/Sea_Level_Elevation.npy")[
             :, self.model_number * self.time_slice_length: (self.model_number + 1) * self.time_slice_length
             ]
         ).to(self.device)
         self.exact_solution_u_values = torch.FloatTensor(
-            np.load("Numerical_Solution/dt=1s_dx=400m/" + self.numerical_solution_directory + "/Zonal_Velocity.npy")[
+            np.load(get_numerical_solution_dir(self.numerical_solution_directory) + "/Zonal_Velocity.npy")[
             :, self.model_number * self.time_slice_length: (self.model_number + 1) * self.time_slice_length
             ]
         ).to(self.device)
@@ -344,6 +345,34 @@ class PINN(nn.Module):
             [self.dimensional_time_mesh_grid, self.dimensional_x_mesh_grid] = np.meshgrid(
                 self.time_grid * self.time_scale, self.x_grid * self.horizontal_length_scale
             )
+
+    def save_best_state_in_memory(self, step, validation_error):
+        self.best_validation_error = float(validation_error)
+        self.best_step = float(step)
+        self.improvement_steps.append(float(step))
+
+        self.best_state_dict = {
+            key: value.detach().cpu().clone()
+            for key, value in self.state_dict().items()
+        }
+
+
+    def load_best_state(self):
+        if self.best_state_dict is None:
+            raise RuntimeError("Best state dict is not initialized.")
+
+        self.load_state_dict(self.best_state_dict)
+        self.to(self.device)
+
+
+    def get_best_state_dict(self):
+        if self.best_state_dict is None:
+            return None
+
+        return {
+            key: value.clone()
+            for key, value in self.best_state_dict.items()
+        }
 
     def forward(self, t, x):
 
@@ -744,7 +773,6 @@ class PINN(nn.Module):
         self.Save_MSE()
 
         # initialize values for training
-        lowest_validation_error = 99999.0
         self.time_per_epoch = []
         self.time_per_iteration = []
 
@@ -818,14 +846,16 @@ class PINN(nn.Module):
                 self.MSE_numerical_solution_function()
                 self.Save_MSE()
                 # save best state dict
-                validation_error = self.MSE_numerical_solution_u_value + self.MSE_numerical_solution_h_value
-                if (validation_error < lowest_validation_error) or i == 1:
-                    lowest_validation_error = validation_error
-                    torch.save(
-                        self.state_dict(), (str(self.best_state_dir) + "/"+ "Best_State_Dict_" + str(self.model_number) + "_" + str(self.exp_name))
+                validation_error = (
+                    self.MSE_numerical_solution_u_value
+                    + self.MSE_numerical_solution_h_value
+                ).detach().cpu().item()
+
+                if validation_error < self.best_validation_error:
+                    self.save_best_state_in_memory(
+                        step=i + 1,
+                        validation_error=validation_error,
                     )
-                    self.improvement_steps.append(float(i))
-                    self.best_step = float(i)
 
                 print("Epoch no.: " + str(i + 1) + "/" + str(self.epochs) + " iteration no. " + str(j + 1) + "/"
                       + str(self.iterations_per_epoch))
@@ -841,7 +871,8 @@ class PINN(nn.Module):
                     print("Boundary Condition weight: ", np.asscalar(self.boundary_condition_weight.cpu().numpy()))
 
             self.time_per_epoch.append(time.time() - epoch_start_time)
-            print("Time Per Epoch: " + str(np.mean(self.time_per_epoch)) + "s")
+            if (i + 1) % self.output_period == 0:
+                print("Time Per Epoch: " + str(np.mean(self.time_per_epoch)) + "s")
 
         self.symbolic_function_sampling_points = self.pde_dataset.tx.to(self.device)
         self.lower_boundary_condition_sampling_points = self.lbc_dataset.tx.to(self.device)
