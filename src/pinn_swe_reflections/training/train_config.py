@@ -80,7 +80,7 @@ class TrainConfig:
     bc_mini_batch_size = 200
     ic_mini_batch_size = 200
     pde_mini_batch_size = 500
-    epochs = 4000
+    epochs = 1000
     device = "cuda"  # "cuda" for GPU or "cpu"
     iterations_per_epoch = int(symbolic_function_batch_size / pde_mini_batch_size)
     batch_resampling_period = 1000 * epochs  # number of training steps after which new collocation points are selected
