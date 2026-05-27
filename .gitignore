@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+.env
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# IDE local settings
+.idea/
+.vscode/
+
+# Training results
+training_results/**
+!training_results/
+!training_results/.gitkeep
+
+# Numerical reference data
+reference_solver/data/**
+!reference_solver/data/
+!reference_solver/data/raw/
+!reference_solver/data/raw/AH=0/
+!reference_solver/data/raw/AH=5e+4/
+!reference_solver/data/pinn_ready/
+!reference_solver/data/pinn_ready/dt=1s_dx=400m/
+!reference_solver/data/pinn_ready/dt=1s_dx=400m/AH=0/
+!reference_solver/data/pinn_ready/dt=1s_dx=400m/AH=5e+4/
+!reference_solver/data/**/.gitkeep
