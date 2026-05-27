@@ -257,8 +257,8 @@ contains
   ufile = '../data/raw/AH=5e+4/udata/uHHHH.dat'
   zfile = '../data/raw/AH=5e+4/zdata/zHHHH.dat'
 
-  write(ufile(15:18),'(i4.4)') ho
-  write(zfile(15:18),'(i4.4)') ho
+  write(ufile(28:31),'(i4.4)') ho
+  write(zfile(28:31),'(i4.4)') ho
   
   open(1, file = ufile)
   do i = 1,nx,1

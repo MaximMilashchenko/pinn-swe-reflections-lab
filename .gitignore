@@ -30,6 +30,7 @@ training_results/**
 
 # Numerical reference data
 reference_solver/data/**
+reference_solver/fortran/swe_solver
 !reference_solver/data/
 !reference_solver/data/raw/
 !reference_solver/data/raw/AH=0/

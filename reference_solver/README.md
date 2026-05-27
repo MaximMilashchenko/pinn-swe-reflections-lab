@@ -109,7 +109,8 @@ python reference_solver/scripts/convert_solution_to_pinn_ready.py \
   --time-end 270000.0 \
   --x-min -1000000.0 \
   --x-max 1000000.0 \
-  --zeta-start-index 13
+  --zeta-start-index 13 \\
+  --grid-label", default="dt=1s_dx=400m
 ```
 
 The converter downsamples the raw grid to the reference grid expected by PINN:
