@@ -1,0 +1,21 @@
+pinn-swe-reflections-lab
+
+This project contains modified and reorganized code derived from:
+
+Testing_PINNs
+https://github.com/KubilayDemir/Testing_PINNs
+
+The original project is associated with the publication:
+
+Demir, K. T.; Logemann, K.; Greenberg, D. S.
+Closed-Boundary Reflections of Shallow Water Waves as an Open Challenge
+for Physics-Informed Neural Networks.
+Mathematics 2024, 12(21), 3315.
+https://doi.org/10.3390/math12213315
+
+Modifications in this repository include repository restructuring, reference-solution
+preprocessing utilities, experiment runners, and additional PINN training strategies,
+including RAD, RAR-D, gPINN-style losses and precision-control
+experiments.
+
+Unless otherwise stated, modifications are provided under the Apache License 2.0.
