@@ -126,7 +126,7 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
         best_state_dict = Physics_Informed_Neural_Network.get_best_state_dict()
 
         # Save Model Parameters
-        torch.save(best_state_dict, out_path("TrainedParameters_SWE_" + str(model_number) + ".pt"))
+        torch.save(best_state_dict, out_path("Best_state_dict_" + str(model_number) + ".pt"))
 
         # Save new initial conditions and respective sampling points
         [local_new_initial_conditions, local_new_initial_condition_sampling_points] = Physics_Informed_Neural_Network.Save_Final_State()

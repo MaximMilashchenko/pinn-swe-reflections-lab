@@ -48,7 +48,7 @@ ROOT_DIR = get_root_dir()
 
 DATA_DIR = _resolve_from_env_or_default(
     DATA_DIR_ENV,
-    ROOT_DIR / "Numerical_Solution" / "dt=1s_dx=400m",
+    ROOT_DIR / "reference_solver" / "data" / "pinn_ready" / "dt=1s_dx=400m",
 )
 
 TRAINING_RESULTS_DIR = _resolve_from_env_or_default(

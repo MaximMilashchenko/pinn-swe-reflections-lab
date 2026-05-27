@@ -279,12 +279,12 @@ class PINN(nn.Module):
 
         self.exact_solution_h_values = torch.FloatTensor(
             np.load(
-                get_numerical_solution_dir(self.numerical_solution_directory) + "/Sea_Level_Elevation.npy")[
+                str(get_numerical_solution_dir(self.numerical_solution_directory)) + "/Sea_Level_Elevation.npy")[
             :, self.model_number * self.time_slice_length: (self.model_number + 1) * self.time_slice_length
             ]
         ).to(self.device)
         self.exact_solution_u_values = torch.FloatTensor(
-            np.load(get_numerical_solution_dir(self.numerical_solution_directory) + "/Zonal_Velocity.npy")[
+            np.load(str(get_numerical_solution_dir(self.numerical_solution_directory)) + "/Zonal_Velocity.npy")[
             :, self.model_number * self.time_slice_length: (self.model_number + 1) * self.time_slice_length
             ]
         ).to(self.device)
