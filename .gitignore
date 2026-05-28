@@ -28,6 +28,9 @@ training_results/**
 !training_results/
 !training_results/.gitkeep
 
+# Notebook analysis outputs
+analysis_outputs/**
+
 # Numerical reference data
 reference_solver/data/**
 reference_solver/fortran/swe_solver
