@@ -182,6 +182,20 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
             if hasattr(Physics_Informed_Neural_Network, array_name):
                 save_npy(array_name, getattr(Physics_Informed_Neural_Network, array_name))
 
+        adaptive_sampling_arrays = [
+            "rad_mean_residual_over_training",
+            "rad_max_residual_over_training",
+            "rad_min_residual_over_training",
+            "rar_d_added_points_over_training",
+            "rar_d_pde_dataset_size_over_training",
+            "rar_d_mean_residual_over_training",
+            "rar_d_max_residual_over_training",
+            "rar_d_min_residual_over_training",
+        ]
+        for array_name in adaptive_sampling_arrays:
+            if hasattr(Physics_Informed_Neural_Network, array_name):
+                save_npy(array_name, getattr(Physics_Informed_Neural_Network, array_name))
+
         if Physics_Informed_Neural_Network.learning_rate_annealing is True:
             save_npy(
                 "symbolic_function_weight_over_training",
