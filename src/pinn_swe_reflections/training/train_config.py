@@ -86,7 +86,7 @@ class TrainConfig:
     optimizer = torch.optim.Adam  # optimizer used for the entire training, if:  projected_gradients = False
     learning_rate = 0.0005  # the default learning rates are 0.001 for Adam and 1 for LBFGS
     line_search = None  # "strong_wolfe"  # valid options are None, "Armijo" or "strong_wolfe", only used for LBFGS
-    projected_gradients = True  # When this is True, the optimizer is automatically set to be Adam
+    projected_gradients = False  # When this is True, the optimizer is automatically set to be Adam
 
     # activation function and selection of the depth and width of the neural network
     number_of_layers = 4  # number of hidden layers
