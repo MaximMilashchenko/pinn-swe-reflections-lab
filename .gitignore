@@ -19,6 +19,9 @@ dist/
 .ruff_cache/
 .mypy_cache/
 
+# Runtime logs
+logs/
+
 # IDE local settings
 .idea/
 .vscode/
