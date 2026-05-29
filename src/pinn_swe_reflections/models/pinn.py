@@ -498,6 +498,9 @@ class PINN(nn.Module):
         self.MSE_symbolic_function_h = (self.symbolic_function_h_values ** 2).mean()
         self.MSE_symbolic_function_value = self.MSE_symbolic_function_u + self.MSE_symbolic_function_h
 
+    def Extra_Loss_Print_Items(self):
+        return []
+
     def total_MSE_function(self):
         self.total_MSE_value = 0.0
 
@@ -862,6 +865,8 @@ class PINN(nn.Module):
                 print("Boundary Condition Loss = ", self.MSE_boundary_conditions_value.cpu().detach().numpy())
                 print("Initial Condition Loss = ", self.MSE_initial_condition_value.cpu().detach().numpy())
                 print("Symbolic Function Loss = ", self.MSE_symbolic_function_value.cpu().detach().numpy())
+                for label, value in self.Extra_Loss_Print_Items():
+                    print(label + " = ", value.cpu().detach().numpy())
                 print("Numerical Solution Loss u = ", self.MSE_numerical_solution_u_value.cpu().detach().numpy())
                 print("Numerical Solution Loss h = ", self.MSE_numerical_solution_h_value.cpu().detach().numpy())
 

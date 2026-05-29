@@ -119,6 +119,13 @@ class EulerTransitionPINN(PINN):
             self.euler_transition_weight * self.MSE_euler_transition_value
         )
 
+    def Extra_Loss_Print_Items(self):
+        return [
+            ("Euler Transition Loss", self.MSE_euler_transition_value),
+            ("Euler Transition Loss u", self.MSE_euler_transition_u),
+            ("Euler Transition Loss h", self.MSE_euler_transition_h),
+        ]
+
     def Save_MSE(self):
         if not hasattr(self, "MSE_euler_transition_over_training"):
             self._reset_euler_transition_history()
