@@ -171,6 +171,9 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
         )
 
         extra_loss_arrays = [
+            "MSE_euler_transition_over_training",
+            "MSE_euler_transition_u_over_training",
+            "MSE_euler_transition_h_over_training",
             "MSE_symbolic_function_without_gpinn_over_training",
             "MSE_gPINN_gradient_over_training",
             "MSE_gPINN_u_t_over_training",
