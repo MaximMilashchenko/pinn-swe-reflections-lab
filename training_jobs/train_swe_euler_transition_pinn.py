@@ -9,9 +9,9 @@ cfg.output_period = 10
 
 run_training_pipeline(
     model_cls=EulerTransitionPINN,
-    experiment_name="euler_transition_w2e7",
+    experiment_name="euler_transition_w3e6",
     cfg=cfg,
     model_kwargs={
-        "euler_transition_weight": 2.0e7,
+        "euler_transition_weight": 3.0e6,
     },
 )
