@@ -9,11 +9,12 @@ cfg.output_period = 10
 
 run_training_pipeline(
     model_cls=IntegralConservationPINN,
-    experiment_name="integral_conservation_w1",
+    experiment_name="integral_conservation_anchor_w1",
     cfg=cfg,
     model_kwargs={
         "global_mass_weight": 1.0,
         "energy_balance_weight": 1.0,
+        "energy_pairwise_weight": 0.0,
         "control_volume_mass_weight": 1.0,
         "control_volume_momentum_weight": 0.25,
         "conservation_time_batch_size": 4,

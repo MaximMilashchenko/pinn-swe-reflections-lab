@@ -16,6 +16,7 @@ class IntegralConservationPINN(PINN):
         *args,
         global_mass_weight=1.0,
         energy_balance_weight=1.0,
+        energy_pairwise_weight=0.0,
         control_volume_mass_weight=1.0,
         control_volume_momentum_weight=1.0,
         conservation_time_batch_size=4,
@@ -35,6 +36,7 @@ class IntegralConservationPINN(PINN):
 
         self.global_mass_weight = global_mass_weight
         self.energy_balance_weight = energy_balance_weight
+        self.energy_pairwise_weight = energy_pairwise_weight
         self.control_volume_mass_weight = control_volume_mass_weight
         self.control_volume_momentum_weight = control_volume_momentum_weight
 
@@ -57,6 +59,8 @@ class IntegralConservationPINN(PINN):
     def _reset_conservation_history(self):
         self.MSE_global_mass_over_training = []
         self.MSE_energy_balance_over_training = []
+        self.MSE_energy_anchor_over_training = []
+        self.MSE_energy_pairwise_over_training = []
         self.MSE_control_volume_mass_over_training = []
         self.MSE_control_volume_momentum_over_training = []
         self.MSE_integral_conservation_over_training = []
@@ -211,22 +215,27 @@ class IntegralConservationPINN(PINN):
         )
 
         amplitude_scale = max(float(abs(self.initial_perturbation_amplitude)), self.conservation_eps)
-        mass_scale = torch.maximum(
-            torch.abs(mass0),
-            torch.tensor(
-                amplitude_scale * self._domain_length(),
-                device=self.device,
-            ),
+        scale_eps = torch.tensor(self.conservation_eps, device=self.device)
+        mass_fallback_scale = torch.tensor(
+            amplitude_scale * self._domain_length(),
+            device=self.device,
         )
-        energy_scale = torch.maximum(
+        energy_fallback_scale = torch.tensor(
+            0.5
+            * self._pressure_scale()
+            * amplitude_scale ** 2
+            * self._domain_length(),
+            device=self.device,
+        )
+        mass_scale = torch.where(
+            torch.abs(mass0) > scale_eps,
+            torch.abs(mass0),
+            mass_fallback_scale,
+        )
+        energy_scale = torch.where(
+            torch.abs(energy0) > scale_eps,
             torch.abs(energy0),
-            torch.tensor(
-                0.5
-                * self._pressure_scale()
-                * amplitude_scale ** 2
-                * self._domain_length(),
-                device=self.device,
-            ),
+            energy_fallback_scale,
         )
 
         return {
@@ -301,6 +310,27 @@ class IntegralConservationPINN(PINN):
 
     def MSE_energy_balance_function(self):
         targets = self._get_initial_conservation_targets()
+        t = self._sample_times(self.conservation_time_batch_size)
+        t_initial = torch.full_like(t, float(self.minimum_time))
+
+        energy_t = self._energy_at_times(t)
+        dissipation_from_initial = self._dissipation_between_times(t_initial, t)
+        anchor_residual = (
+            energy_t
+            - targets["energy0"]
+            + dissipation_from_initial
+        ) / targets["energy_scale"]
+        self.MSE_energy_anchor_value = (anchor_residual ** 2).mean()
+
+        if self.energy_pairwise_weight == 0.0:
+            self.MSE_energy_pairwise_value = torch.zeros(
+                (),
+                device=self.device,
+                dtype=self.MSE_energy_anchor_value.dtype,
+            )
+            self.MSE_energy_balance_value = self.MSE_energy_anchor_value
+            return
+
         t0, t1 = self._sample_time_pairs(
             self.conservation_time_batch_size,
             self.conservation_time_delta,
@@ -311,8 +341,12 @@ class IntegralConservationPINN(PINN):
         energy1 = self._energy_at_times(t1)
         dissipation = self._dissipation_between_times(t0, t1)
 
-        residual = (energy1 - energy0 + dissipation) / targets["energy_scale"]
-        self.MSE_energy_balance_value = (residual ** 2).mean()
+        pairwise_residual = (energy1 - energy0 + dissipation) / targets["energy_scale"]
+        self.MSE_energy_pairwise_value = (pairwise_residual ** 2).mean()
+        self.MSE_energy_balance_value = (
+            self.MSE_energy_anchor_value
+            + self.energy_pairwise_weight * self.MSE_energy_pairwise_value
+        )
 
     def _control_volume_geometry(self):
         edges = self._make_line(
@@ -457,6 +491,8 @@ class IntegralConservationPINN(PINN):
         return [
             ("Global Mass Loss", self.MSE_global_mass_value),
             ("Energy Balance Loss", self.MSE_energy_balance_value),
+            ("Energy Anchor Loss", self.MSE_energy_anchor_value),
+            ("Energy Pairwise Loss", self.MSE_energy_pairwise_value),
             ("Control Volume Mass Loss", self.MSE_control_volume_mass_value),
             ("Control Volume Momentum Loss", self.MSE_control_volume_momentum_value),
             ("Weighted Integral Conservation Loss", self.MSE_integral_conservation_value),
@@ -473,6 +509,12 @@ class IntegralConservationPINN(PINN):
         )
         self.MSE_energy_balance_over_training.append(
             self.MSE_energy_balance_value.cpu().detach().numpy()
+        )
+        self.MSE_energy_anchor_over_training.append(
+            self.MSE_energy_anchor_value.cpu().detach().numpy()
+        )
+        self.MSE_energy_pairwise_over_training.append(
+            self.MSE_energy_pairwise_value.cpu().detach().numpy()
         )
         self.MSE_control_volume_mass_over_training.append(
             self.MSE_control_volume_mass_value.cpu().detach().numpy()

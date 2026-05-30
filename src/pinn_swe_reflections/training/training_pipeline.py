@@ -182,6 +182,8 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
             "MSE_gPINN_h_x_over_training",
             "MSE_global_mass_over_training",
             "MSE_energy_balance_over_training",
+            "MSE_energy_anchor_over_training",
+            "MSE_energy_pairwise_over_training",
             "MSE_control_volume_mass_over_training",
             "MSE_control_volume_momentum_over_training",
             "MSE_integral_conservation_over_training",
