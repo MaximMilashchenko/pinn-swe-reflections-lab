@@ -137,7 +137,7 @@ class ConstrainedIntegralConservationPINN(IntegralConservationPINN):
             else:
                 output_u = alpha * initial_u + (1.0 - alpha) * raw_u
 
-            output_h = alpha * initial_h + (1.0 - alpha) * raw_h
+            output_h = initial_h + (1.0 - alpha) * raw_h
         elif self.boundary_condition_transition_function is True:
             lift, bubble = self._boundary_lift_and_bubble(t, x)
             output_u = lift + bubble * raw_u

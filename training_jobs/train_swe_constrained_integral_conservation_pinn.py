@@ -11,15 +11,15 @@ cfg.initial_condition_transition_function = True
 
 run_training_pipeline(
     model_cls=ConstrainedIntegralConservationPINN,
-    experiment_name="constrained_integral_conservation_w1",
+    experiment_name="constrained_integral_conservation_soft_cv",
     cfg=cfg,
     model_kwargs={
         "global_mass_weight": 1.0,
         "energy_balance_weight": 1.0,
         "energy_pairwise_weight": 0.0,
         "global_discharge_weight": 1.0,
-        "control_volume_mass_weight": 1.0,
-        "control_volume_momentum_weight": 0.25,
+        "control_volume_mass_weight": 0.1,
+        "control_volume_momentum_weight": 0.0,
         "conservation_time_batch_size": 4,
         "conservation_space_points": 51,
         "conservation_dissipation_time_points": 3,
