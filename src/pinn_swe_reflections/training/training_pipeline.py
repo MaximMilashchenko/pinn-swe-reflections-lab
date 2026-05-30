@@ -124,9 +124,16 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
         # get best state dict
         best_step = Physics_Informed_Neural_Network.best_step
         best_state_dict = Physics_Informed_Neural_Network.get_best_state_dict()
+        final_state_dict = {
+            key: value.detach().cpu().clone()
+            for key, value in Physics_Informed_Neural_Network.state_dict().items()
+        }
 
         # Save Model Parameters
+        torch.save(final_state_dict, out_path("Final_state_dict_" + str(model_number) + ".pt"))
         torch.save(best_state_dict, out_path("Best_state_dict_" + str(model_number) + ".pt"))
+        if best_state_dict is not None:
+            Physics_Informed_Neural_Network.load_best_state()
 
         # Save new initial conditions and respective sampling points
         [local_new_initial_conditions, local_new_initial_condition_sampling_points] = Physics_Informed_Neural_Network.Save_Final_State()
@@ -184,6 +191,7 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
             "MSE_energy_balance_over_training",
             "MSE_energy_anchor_over_training",
             "MSE_energy_pairwise_over_training",
+            "MSE_global_discharge_over_training",
             "MSE_control_volume_mass_over_training",
             "MSE_control_volume_momentum_over_training",
             "MSE_integral_conservation_over_training",

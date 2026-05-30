@@ -374,6 +374,9 @@ class PINN(nn.Module):
             for key, value in self.best_state_dict.items()
         }
 
+    def checkpoint_selection_error(self):
+        return self.total_MSE_value.detach().cpu().item()
+
     def forward(self, t, x):
 
         tx = torch.cat((t, x), dim=1)
@@ -849,10 +852,7 @@ class PINN(nn.Module):
                 self.MSE_numerical_solution_function()
                 self.Save_MSE()
                 # save best state dict
-                validation_error = (
-                    self.MSE_numerical_solution_u_value
-                    + self.MSE_numerical_solution_h_value
-                ).detach().cpu().item()
+                validation_error = self.checkpoint_selection_error()
 
                 if validation_error < self.best_validation_error:
                     self.save_best_state_in_memory(

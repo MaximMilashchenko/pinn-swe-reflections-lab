@@ -312,10 +312,7 @@ class ResidualAdaptiveDistributionPINN(PINN):
 
                 self.MSE_numerical_solution_function()
                 self.Save_MSE()
-                validation_error = (
-                    self.MSE_numerical_solution_u_value
-                    + self.MSE_numerical_solution_h_value
-                ).detach().cpu().item()
+                validation_error = self.checkpoint_selection_error()
 
                 if validation_error < self.best_validation_error:
                     self.save_best_state_in_memory(
