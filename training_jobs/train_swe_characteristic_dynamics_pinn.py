@@ -19,7 +19,7 @@ run_training_pipeline(
         "modal_dynamics_modes": 32,
         "modal_dynamics_include_initial": True,
         "modal_dynamics_anchor_initial": True,
-        "modal_dynamics_step_weight": 1.0,
-        "modal_dynamics_anchor_weight": 1.0,
+        "modal_dynamics_step_weight": 5e-3,
+        "modal_dynamics_anchor_weight": 5e-4,
     },
 )
