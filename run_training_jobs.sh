@@ -14,7 +14,8 @@ JOBS=(
   # "training_jobs/train_swe_gpinn.py"
   # "training_jobs/train_swe_rad_pinn.py"
   # "training_jobs/train_swe_rar_d_pinn.py"
-  "training_jobs/train_swe_euler_transition_pinn.py"
+  # "training_jobs/train_swe_euler_transition_pinn.py"
+  "training_jobs/train_swe_integral_conservation_pinn.py"
 )
 
 if command -v uv >/dev/null 2>&1 && [ -f "uv.lock" ]; then

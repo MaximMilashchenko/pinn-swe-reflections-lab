@@ -180,6 +180,11 @@ def run_training_pipeline(model_cls, experiment_name, cfg, model_kwargs=None):
             "MSE_gPINN_h_t_over_training",
             "MSE_gPINN_u_x_over_training",
             "MSE_gPINN_h_x_over_training",
+            "MSE_global_mass_over_training",
+            "MSE_energy_balance_over_training",
+            "MSE_control_volume_mass_over_training",
+            "MSE_control_volume_momentum_over_training",
+            "MSE_integral_conservation_over_training",
         ]
         for array_name in extra_loss_arrays:
             if hasattr(Physics_Informed_Neural_Network, array_name):
